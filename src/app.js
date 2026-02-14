@@ -31,6 +31,16 @@ app.use('/hello', (req,res, next)=> {
 }]
 )
 
+app.get('/getUserData', (req,res)=> {
+    throw new Error();
+})
+
+app.use('/', (err, req,res, next)=> {
+    if(err) {
+        res.status(500).send('Something went wrong')
+    }
+})
+
 app.listen('3000', ()=> {
     console.log('Server is running')
 })
