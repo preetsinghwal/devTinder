@@ -41,14 +41,20 @@ app.get('/feed', async (req,res, next)=> {
 })
 
 // Update user data by id
-app.patch('/user', async (req,res)=> {
-    const userId = req.body.userId;
+app.patch('/user/:userId', async (req,res)=> {
+    const userId = req.params.userId;
     const body = req.body;
     try {
+        const ALLOWED_UPDATES = ['photoUrl', 'about', 'gender', 'age', 'skills'];
+        const isUpdateAllowed = Object.keys(body).every((item)=> ALLOWED_UPDATES.includes(item));
+
+        if(!isUpdateAllowed) {
+            throw new Error('Update is not allowed');
+        }
         await User.findByIdAndUpdate(userId, body, {returnDocument: "after", runValidators: true});
         res.send('User updated successfully');
     }catch(err) {
-        res.status(400).send('Something went wrong'+ err.message);
+        res.status(400).send('Update Failed: '+ err.message);
     }
 })
 
