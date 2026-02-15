@@ -1,5 +1,4 @@
 const express = require('express');
-const conncetDb = require('./config/database');
 const connectDb = require('./config/database');
 const app = express();
 const User = require('./models/user');
@@ -16,7 +15,7 @@ app.get('/user', async (req,res)=> {
         // const user = await User.find({emailId: req.body.emailId})
         res.send(user)
     }catch(err){
-        res.status(404).send('Something went wrong')
+        res.status(400).send('Something went wrong')
     }
 })
 
@@ -27,17 +26,17 @@ app.delete('/user', async (req,res)=> {
         await User.findByIdAndDelete(userId);
         res.send('User is successfully deleted');
     }catch(err) {
-        res.status(404).send('Something went wrong');
+        res.status(400).send('Something went wrong');
     }
 })
 
 // Get Feed of all Users
-app.get('/feed', async (req,res)=> {
+app.get('/feed', async (req,res, next)=> {
     try{
         const users = await User.find({});
         res.send(users)
     }catch(err){
-        res.status(404).send('Something went wrong');
+        res.status(400).send('Something went wrong');
     }
 })
 
@@ -46,10 +45,10 @@ app.patch('/user', async (req,res)=> {
     const userId = req.body.userId;
     const body = req.body;
     try {
-        await User.findByIdAndUpdate(userId, body);
+        await User.findByIdAndUpdate(userId, body, {returnDocument: "after", runValidators: true});
         res.send('User updated successfully');
     }catch(err) {
-        res.status(404).send('Something went wrong');
+        res.status(400).send('Something went wrong'+ err.message);
     }
 })
 
