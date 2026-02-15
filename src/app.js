@@ -1,46 +1,33 @@
 const express = require('express');
-
+const conncetDb = require('./config/database');
+const connectDb = require('./config/database');
 const app = express();
+const User = require('./models/user');
 
-const { adminAuth, userAuth } = require('../middlewares/auth')
+app.post('/signup', async (req,res)=> {
+    const user = new User({
+        firstName: 'Preet',
+        lastName: 'Singhwal',
+        emailId: 'preet@gmail.com',
+        password: 'test123',
+        age: 22,
+        gender: 'Male'
+    });
 
-app.use('/admin', adminAuth);
-// app.use('/user', userAuth);
-
-app.post('/user/login', (req,res)=> {
-    res.send('User loggedin successfully')
-})
-
-app.get('/admin/data', (req,res)=> {
-    res.send('Admin data received')
-})
-
-app.get('/user/profile', userAuth, (req,res)=> {
-    res.send('User profile data received')
-})
-
-app.use('/hello', (req,res, next)=> {
-    // next();
-    // res.send('Response')
-    next()
-},
-[(req,res,next)=> {
-    next()
-    res.send("2nd response")
-    
-}]
-)
-
-app.get('/getUserData', (req,res)=> {
-    throw new Error();
-})
-
-app.use('/', (err, req,res, next)=> {
-    if(err) {
-        res.status(500).send('Something went wrong')
+    try{
+        await user.save();
+        res.send('User Added Successfully')
+    }catch(err) {
+        res.status(400).send('Error while saving the user please try after sometime:' + err.message)
     }
+
 })
 
-app.listen('3000', ()=> {
-    console.log('Server is running')
+connectDb().then(() => {
+    console.log('Database connected successfully');
+    app.listen('3000', () => {
+        console.log('Server is running')
+    })
+}).catch(err => {
+    console.log('Error while connecting to database')
 })
