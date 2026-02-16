@@ -4,61 +4,12 @@ const app = express();
 const User = require('./models/user');
 const {validateSignupData} = require('./utils/validation');
 const bcrypt = require('bcrypt');
+const cookieParser = require("cookie-parser");
+const {userAuth} = require('../middlewares/auth');
 
 app.use(express.json());
+app.use(cookieParser())
 
-
-// Get user API
-app.get('/user', async (req,res)=> {
-    try{
-        // It will give only single record
-        const user = await User.findOne({emailId: req.body.emailId});
-        // It will all the matching result in array
-        // const user = await User.find({emailId: req.body.emailId})
-        res.send(user)
-    }catch(err){
-        res.status(400).send('Something went wrong')
-    }
-})
-
-// Delete User API
-app.delete('/user', async (req,res)=> {
-    try{
-        const userId = req.body.userId;
-        await User.findByIdAndDelete(userId);
-        res.send('User is successfully deleted');
-    }catch(err) {
-        res.status(400).send('Something went wrong');
-    }
-})
-
-// Get Feed of all Users
-app.get('/feed', async (req,res, next)=> {
-    try{
-        const users = await User.find({});
-        res.send(users)
-    }catch(err){
-        res.status(400).send('Something went wrong');
-    }
-})
-
-// Update user data by id
-app.patch('/user/:userId', async (req,res)=> {
-    const userId = req.params.userId;
-    const body = req.body;
-    try {
-        const ALLOWED_UPDATES = ['photoUrl', 'about', 'gender', 'age', 'skills'];
-        const isUpdateAllowed = Object.keys(body).every((item)=> ALLOWED_UPDATES.includes(item));
-
-        if(!isUpdateAllowed) {
-            throw new Error('Update is not allowed');
-        }
-        await User.findByIdAndUpdate(userId, body, {returnDocument: "after", runValidators: true});
-        res.send('User updated successfully');
-    }catch(err) {
-        res.status(400).send('Update Failed: '+ err.message);
-    }
-})
 
 app.post('/signup', async (req,res)=> {
 
@@ -98,8 +49,11 @@ app.post('/login', async (req,res)=> {
             throw new Error('Invalid Email Id or Password')
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.validatePassword(password);
         if(isPasswordValid) {
+            const token = await user.getJwt();
+
+            res.cookie("token", token, {expires: new Date(Date.now() + 8 * 3600000)});
             res.send('Login Successfully');
         } else {
             throw new Error('Invalid Email Id or Password')
@@ -107,6 +61,26 @@ app.post('/login', async (req,res)=> {
 
     }catch(err) {
         res.status(400).send("Error: " + err.message);
+    }
+})
+
+app.get('/profile', userAuth, async (req,res)=> {
+    try {
+        const user = req?.user;
+        res.send(user);
+        
+    }catch(err) {
+        res.status(400).send('ERROR: ' + err.message);
+    }
+})
+
+app.post('/sendConnectionRequest', userAuth, async (req, res)=> {
+    try{
+        const user = req?.user;
+        res.send(user?.firstName + ' sent connection request');
+
+    }catch(err) {
+        res.status(400).send('ERROR: ' + err.message);
     }
 })
 
